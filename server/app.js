@@ -41,10 +41,7 @@ const getAudio = (videoURL, res) => {
     .pipe(res)
 
   ytdl.getInfo(videoURL).then((info) => {
-    clientGlob.emit('videoDetails', [
-      info.videoDetails.title,
-      info.videoDetails.author.name,
-    ])
+    clientGlob.emit('videoDetails', [info.videoDetails.title])
   })
 }
 
