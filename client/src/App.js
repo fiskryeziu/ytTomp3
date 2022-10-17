@@ -1,7 +1,6 @@
 import React from 'react'
+import Music from './Music'
 
-const App = () => {
-  return <div>App</div>
-}
+const App = () => <Music />
 
 export default App

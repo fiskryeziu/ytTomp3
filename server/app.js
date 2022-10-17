@@ -1,27 +1,63 @@
+import ytdl from 'ytdl-core'
 import express from 'express'
-import mp3 from 'youtube-mp3-downloader'
-import ffmpeg from 'ffmpeg-static'
+import cors from 'cors'
+import http from 'http'
+import { Server } from 'socket.io'
+
 const app = express()
 
-const PORT = 5000
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(cors())
 
-const downloadPath = process.env.USERPROFILE + '/Downloads'
+const server = http.createServer(app)
 
-const yd = new mp3({
-  ffmpegPath: ffmpeg,
-  outputPath: downloadPath,
-  youtubeVideoQuality: 'highestaudio',
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+  },
 })
-yd.download('RqqYRon0sjE')
+const port = process.env.PORT || 5000
 
-yd.on('progress', function (progress) {
-  console.log(progress.progress.percentage)
+let clientGlob = null
+
+const getAudio = (videoURL, res) => {
+  // console.log(videoURL)
+  // console.log(res)
+  let stream = ytdl(videoURL, {
+    quality: 'highestaudio',
+    filter: 'audioonly',
+  })
+    .on('progress', (chunkSize, downloadedChunk, totalChunk) => {
+      clientGlob.emit('progressEventSocket', [
+        (downloadedChunk * 100) / totalChunk,
+      ])
+      clientGlob.emit('downloadCompletedServer', [downloadedChunk])
+      if (downloadedChunk == totalChunk) {
+        console.log('Downloaded')
+      }
+    })
+    .pipe(res)
+
+  ytdl.getInfo(videoURL).then((info) => {
+    clientGlob.emit('videoDetails', [
+      info.videoDetails.title,
+      info.videoDetails.author.name,
+    ])
+  })
+}
+
+app.post('/', (req, res) => {
+  getAudio(req.body.url, res)
+  // console.log(req.body.url)
 })
 
-yd.on('finished', function (err, data) {
-  console.log('music downloaded')
+io.on('connection', (client) => {
+  clientGlob = client
+  console.log('User connected')
 })
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+server.listen(port, () => {
+  console.log(`Example app listening at http://localhost:${port}`)
 })
