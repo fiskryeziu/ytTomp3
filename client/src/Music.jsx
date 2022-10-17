@@ -40,13 +40,10 @@ const Music = () => {
     })
 
     socket.on('videoDetails', (data) => {
+      //   console.log(data)
       setAllData((prev) => ({
         ...prev,
         videoName: data[0],
-      }))
-      setAllData((prev) => ({
-        ...prev,
-        videoUploader: data[1],
       }))
     })
   })
